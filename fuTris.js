@@ -7,6 +7,7 @@ var field = [];
 var background = [];
 
 var speed = 100;
+var points = 0;
 var pos = {left: 4, top: 0};
 var angle = 0;
 var shapes = [
@@ -223,7 +224,6 @@ function loop() {
     draw_shape(pos.left, pos.top, 2, current_shape_type, angle);
     
     // Next shape
-    //rect(20*2*10+10, 0, 20*5+10, 20*4+10, 1, '000');
     draw_shape(21, 1, 1, next_shape_type, 0);
     
     setTimeout(loop, 5);
