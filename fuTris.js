@@ -1,7 +1,7 @@
 var canvas = document.getElementById('fuTris');
 var context = canvas.getContext('2d');
-canvas.width = 200;
-canvas.height = 320;
+canvas.width = 10*20*2;
+canvas.height = 16*20*2;
 
 var field = [];
 var background = [];
@@ -52,44 +52,44 @@ function shape(_angle) {
     }
 }
 
-colors = ['f5b905', 'a67d00', 'bf4904', '803a10', '000'];
-function draw_brick(x, y, number) {
+colors = ['c1e184', '4f6c19', '699021', '8fc32e', '1a2308'];
+function draw_brick(x, y, scale, number) {
     var i = number-1;
     var color_offset = i > 1 ? 2 : 0;
-    rect(x*20+1, y*20+1, 18, 18, colors[color_offset+1]);
-    rect(x*20+2, y*20+2, 16, 16, colors[color_offset]);
+    rect(x*20+1, y*20+1, 18, 18, 2, colors[color_offset+1]);
+    rect(x*20+2, y*20+2, 16, 16, 2, colors[color_offset]);
     
     // J, L, Z
     if ([0, 3, 5].indexOf(i) != -1) {
-        rect(x*20+5, y*20+5, 10, 10, colors[{0: 2, 3: 0, 5: 4}[i]]);
-        rect(x*20+8, y*20+8, 4, 4, colors[{0: 0, 3: 2, 5: 0}[i]]);
+        rect(x*20+5, y*20+5, 10, 10, 2, colors[{0: 2, 3: 0, 5: 4}[i]]);
+        rect(x*20+8, y*20+8, 4, 4, 2, colors[{0: 0, 3: 2, 5: 0}[i]]);
     }
     
     // []
-    if (i == 1) rect(x*20+5, y*20+5, 10, 10, colors[4]);
+    if (i == 1) rect(x*20+5, y*20+5, 10, 10, 2, colors[4]);
     
     // 5
-    if (i ==4) rect(x*20+8, y*20+8, 4, 4, colors[4]);
+    if (i ==4) rect(x*20+8, y*20+8, 4, 4, 2, colors[4]);
     
     // T
     if (i == 2) {
-        rect(x*20+5, y*20+5, 8, 8, colors[0]);
-        rect(x*20+7, y*20+7, 8, 8, colors[4]);
-        rect(x*20+7, y*20+7, 6, 6, colors[2]);
+        rect(x*20+5, y*20+5, 8, 8, 2, colors[0]);
+        rect(x*20+7, y*20+7, 8, 8, 2, colors[4]);
+        rect(x*20+7, y*20+7, 6, 6, 2, colors[2]);
     }
     
     // ----
     if (i == 6) {
-        rect(x*20+5, y*20+6, 3, 3, colors[0]);
-        rect(x*20+5, y*20+12, 3, 3, colors[0]);
-        rect(x*20+11, y*20+4, 3, 3, colors[0]);
-        rect(x*20+13, y*20+12, 3, 3, colors[0]);
+        rect(x*20+5, y*20+6, 3, 3, 2, colors[0]);
+        rect(x*20+5, y*20+12, 3, 3, 2, colors[0]);
+        rect(x*20+11, y*20+4, 3, 3, 2, colors[0]);
+        rect(x*20+13, y*20+12, 3, 3, 2, colors[0]);
     }
 }
 
-function rect(x, y, w, h, color) {
+function rect(x, y, w, h, scale, color) {
     context.fillStyle = '#'+color;
-    context.fillRect(x, y, w, h);
+    context.fillRect(x*scale, y*scale, w*scale, h*scale);
 }
 function noice(offset, level) {
     return offset+~~(Math.random()*level);
@@ -164,7 +164,7 @@ function init() {
         field[x] = [];
         background[x] = [];
         for (var y=0; y<16; y++) {
-            var mod = noice(10, 10);
+            var mod = noice(15, 15);
             background[x][y] = '' + mod + mod + mod;
             field[x][y] = 0;
         }
@@ -201,15 +201,15 @@ function loop() {
     // background
     for (var x=0; x<10; x++)
         for (var y=0; y<16; y++) {
-            rect(x*20, y*20, 20, 20, background[x][y]);
-            if (field[x][y] !== 0) draw_brick(x, y, field[x][y]);
+            rect(x*20, y*20, 20, 20, 2, background[x][y]);
+            if (field[x][y] !== 0) draw_brick(x, y, 2, field[x][y]);
         }
 
     // shape
     for (var x=0; x<shape(angle)[0].length; x++)
         for (var y=0; y<shape(angle).length; y++)
             if (shape(angle)[y][x] !== 0)
-                draw_brick(x+pos.left, y+pos.top, current_shape_type+1);
+                draw_brick(x+pos.left, y+pos.top, 2, current_shape_type+1);
     
     setTimeout(loop, 5);
 }
