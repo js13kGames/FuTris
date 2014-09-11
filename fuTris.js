@@ -6,6 +6,7 @@ canvas.height = 16*20*2;
 var field = [];
 var background = [];
 
+var game_running = true;
 var speed = 100;
 var points = 0;
 var pos = {left: 4, top: 0};
@@ -43,17 +44,23 @@ var shapes = [
     // ----
     [[[7,7,7,7]], [[7], [7], [7], [7]]]
 ];
+var colors = ['c1e184', '4f6c19', '699021', '8fc32e', '1a2308'];
 var current_shape_type = 0;
 var next_shape_type = Math.ceil(Math.random()*shapes.length-1);
 var current_shape = shapes[current_shape_type];
 
 function shape(type, angle) {
-    var shape = shapes[type];
-    switch (shape.length) {
-        case 1: return shape[0];
-        case 2: return shape[angle%2];
-        case 4: return shape[angle];
+    var s = shapes[type];
+    switch (s.length) {
+        case 1: return s[0];
+        case 2: return s[angle%2];
+        case 4: return s[angle];
     }
+}
+
+function rect(x, y, w, h, scale, color) {
+    context.fillStyle = '#'+color;
+    context.fillRect(x*scale, y*scale, w*scale, h*scale);
 }
 
 function draw_shape(x, y, scale, type, angle) {
@@ -63,7 +70,6 @@ function draw_shape(x, y, scale, type, angle) {
                 draw_brick(x+xi, y+yi, scale, type+1);
 }
 
-colors = ['c1e184', '4f6c19', '699021', '8fc32e', '1a2308'];
 function draw_brick(x, y, scale, number) {
     var i = number-1;
     var color_offset = i > 1 ? 2 : 0;
@@ -98,10 +104,24 @@ function draw_brick(x, y, scale, number) {
     }
 }
 
-function rect(x, y, w, h, scale, color) {
-    context.fillStyle = '#'+color;
-    context.fillRect(x*scale, y*scale, w*scale, h*scale);
+function draw() {
+    // game background
+    rect(0, 0, canvas.width, canvas.height, 1, '000');
+    
+    // game field background
+    for (var x=0; x<10; x++)
+        for (var y=0; y<16; y++) {
+            rect(x*20, y*20, 20, 20, 2, background[x][y]);
+            if (field[x][y] !== 0) draw_brick(x, y, 2, field[x][y]);
+        }
+
+    // Current shape
+    draw_shape(pos.left, pos.top, 2, current_shape_type, angle);
+    
+    // Next shape
+    draw_shape(21, 1, 1, next_shape_type, 0);
 }
+
 function noice(offset, level) {
     return offset+~~(Math.random()*level);
 }
@@ -146,28 +166,53 @@ function will_collide(_angle, _pos) {
 }
 
 addEventListener('keydown', function(event) {
-    if (event.keyCode == 37 &&
-        pos.left > 0 &&
-        !will_collide(angle, {left: pos.left-1, top: pos.top}))
-        pos.left--;
-    if (event.keyCode == 39 &&
-        pos.left < 10-shape(current_shape_type, angle)[0].length &&
-        !will_collide(angle, {left: pos.left+1, top: pos.top}))
-        pos.left++;
-    if (event.keyCode == 38) {
-        var new_angle = angle === 0 ? 3 : angle-1;
-        if (pos.left+shape(current_shape_type, new_angle)[0].length <= 10 &&
-            !will_collide(new_angle, pos))
-            angle = new_angle;
+    if (game_running) {
+	// Move left
+	if (event.keyCode == 37 &&
+	    pos.left > 0 &&
+	    !will_collide(angle, {left: pos.left-1, top: pos.top})) {
+	    pos.left--;
+	    draw();
+	}
+
+	// Move right
+	if (event.keyCode == 39 &&
+	    pos.left < 10-shape(current_shape_type, angle)[0].length &&
+	    !will_collide(angle, {left: pos.left+1, top: pos.top})) {
+	    pos.left++;
+	    draw();
+	}
+
+	// Rotate
+	if (event.keyCode == 38) {
+	    var new_angle = angle === 0 ? 3 : angle-1;
+	    if (pos.left+shape(current_shape_type, new_angle)[0].length <= 10 &&
+		!will_collide(new_angle, pos))
+		angle = new_angle;
+	    draw();
+	}
+
+	// Drop
+	if (event.keyCode == 40) {
+	    while(!will_collide(angle, {left: pos.left, top: pos.top+1}))
+		pos.top++;
+	    pos.top++;
+	    freeze();
+	    clear_full_lines();
+	    next_shape();
+	    draw();
+	}
     }
-    if (event.keyCode == 40) {
-        while(!will_collide(angle, {left: pos.left, top: pos.top+1}))
-            pos.top++;
-        pos.top++;
-        freeze();
-        clear_full_lines();
-        next_shape();
+    
+    // Pause the game
+    if (event.keyCode == 13 || event.keyCode == 80) {
+	game_running = !game_running;
+	if (game_running) loop();
     }
+    
+    // TODO: Back to the main menu
+    if (event.keyCode == 27 || event.keyCode == 121)
+	console.log('Implement me.');
 });
 
 function init() {
@@ -205,28 +250,13 @@ function loop() {
                 if (moved_steps === 0 || will_collide(0, {left: 4, top: 0}))
                     init();
                 moved_steps = 0;
-                return true;
+                return true;	
             }
         }() || (pos.top++ && moved_steps++);
-    }
+	draw();
+    } 
     
-    // game background
-    rect(0, 0, canvas.width, canvas.height, 1, '000');
-    
-    // game field background
-    for (var x=0; x<10; x++)
-        for (var y=0; y<16; y++) {
-            rect(x*20, y*20, 20, 20, 2, background[x][y]);
-            if (field[x][y] !== 0) draw_brick(x, y, 2, field[x][y]);
-        }
-
-    // Current shape
-    draw_shape(pos.left, pos.top, 2, current_shape_type, angle);
-    
-    // Next shape
-    draw_shape(21, 1, 1, next_shape_type, 0);
-    
-    setTimeout(loop, 5);
+    if (game_running) setTimeout(loop, 5);
 }
 
 init();
