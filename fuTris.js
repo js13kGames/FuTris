@@ -82,7 +82,7 @@ function draw_shape(x, y, scale, type, angle) {
 
 function draw_text(text, size, x, y) {
     context.fillStyle = '#fff';
-    context.font = size+'px Verdana';
+    context.font = size+'px Verdana, DejaVu Sans';
     context.fillText(text, x, y);
 }
 
@@ -220,7 +220,7 @@ function will_collide(_angle, _pos) {
 addEventListener('keydown', function(event) {
     if (game_running) {
 	// Move left
-	if (event.keyCode == 37 &&
+	if ((event.keyCode == 37 || event.keyCode == 72) &&
 	    pos.left > 0 &&
 	    !will_collide(angle, {left: pos.left-1, top: pos.top})) {
 	    pos.left--;
@@ -229,7 +229,7 @@ addEventListener('keydown', function(event) {
 	}
 
 	// Move right
-	if (event.keyCode == 39 &&
+	if ((event.keyCode == 39 || event.keyCode == 76) &&
 	    pos.left < 10-shape(current_shape_type, angle)[0].length &&
 	    !will_collide(angle, {left: pos.left+1, top: pos.top})) {
 	    pos.left++;
@@ -238,7 +238,7 @@ addEventListener('keydown', function(event) {
 	}
 
 	// Rotate
-	if (event.keyCode == 38) {
+	if (event.keyCode == 38 || event.keyCode == 75) {
 	    var new_angle = angle === 0 ? 3 : angle-1;
 	    if (pos.left+shape(current_shape_type, new_angle)[0].length <= 10 &&
 		!will_collide(new_angle, pos))
@@ -248,7 +248,7 @@ addEventListener('keydown', function(event) {
 	}
 
 	// Drop
-	if (event.keyCode == 40) {
+	if (event.keyCode == 40 || event.keyCode == 74) {
 	    while(!will_collide(angle, {left: pos.left, top: pos.top+1}))
 		pos.top++;
 	    pos.top++;
