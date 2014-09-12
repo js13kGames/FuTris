@@ -7,6 +7,8 @@ var field = [];
 var background = [];
 
 var game_running = true;
+var subframe = 0;
+var moved_steps = 0;
 var speed = 100;
 var points = 0;
 var level = 0;
@@ -143,6 +145,12 @@ function draw() {
     // Level
     draw_text(level, 30, 420, 230);
     draw_text('Level', 13, 420, 250);
+    
+    // Game over?
+    if (!game_running) {
+	draw_text("Game over", 60, 40, 250);
+	draw_text("Press R for a new game", 20, 140, 270);
+    }
 }
 
 function noice(offset, level) {
@@ -267,9 +275,10 @@ addEventListener('keydown', function(event) {
 	if (game_running) loop();
     }
     
-    // TODO: Back to the main menu
-    if (event.keyCode == 27 || event.keyCode == 121)
-	console.log('Implement me.');
+    // Restart the game
+    if (event.keyCode == 82 && !game_running) {
+	init();
+    }
 });
 
 function init() {
@@ -277,7 +286,48 @@ function init() {
     points = 0;
     level = 0;
     stones = 0;
+    game_running = true;
+    subframe = 0;
+    moved_steps = 0;
+    
+    for (var x=0; x<10; x++)
+	for (var y=0; y<16; y++)
+	    field[x][y] = 0;
 
+    // Start the game
+    next_shape();
+    loop();
+}
+
+function loop() {
+    // Move the next step
+    subframe++;
+    if (subframe-speed > 0.0) {
+        subframe = 0;
+	speed = 100-(level*15);
+        
+        // Check if we get blocked by the already dropped shapes
+        +function() {
+            if (will_collide(angle, pos)) {
+                freeze();
+                clear_full_lines();
+                next_shape();
+                
+                // Game over?
+                if (moved_steps === 0 || will_collide(0, {left: 4, top: 0}))
+		    game_running = false;
+                moved_steps = 0;
+                return true;	
+            }
+	    return false;
+        }() || (pos.top++ && moved_steps++);
+	draw();
+    } 
+    
+    if (game_running) setTimeout(loop, 5);
+}
+
+function setup() {
     // Load the assets
     assets.rotate.load();
     assets.drop.load();
@@ -302,41 +352,7 @@ function init() {
             field[x][y] = 0;
         }
     }
-
-    // Start the game
-    next_shape();
 }
 
-var subframe = 0;
-var moved_steps = 0;
-
-function loop() {
-    // Move the next step
-    subframe++;
-    if (subframe-speed > 0.0) {
-        subframe = 0;
-	speed = 100-(level*15);
-        
-        // Check if we get blocked by the already dropped shapes
-        +function() {
-            if (will_collide(angle, pos)) {
-                freeze();
-                clear_full_lines();
-                next_shape();
-                
-                // Restart the game?
-                if (moved_steps === 0 || will_collide(0, {left: 4, top: 0}))
-                    init();
-                moved_steps = 0;
-                return true;	
-            }
-	    return false;
-        }() || (pos.top++ && moved_steps++);
-	draw();
-    } 
-    
-    if (game_running) setTimeout(loop, 5);
-}
-
+setup();
 init();
-loop();
