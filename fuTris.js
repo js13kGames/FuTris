@@ -9,6 +9,8 @@ var background = [];
 var game_running = true;
 var speed = 100;
 var points = 0;
+var level = 0;
+var stones = 0;
 var pos = {left: 4, top: 0};
 var angle = 0;
 var shapes = [
@@ -45,6 +47,14 @@ var shapes = [
     [[[7,7,7,7]], [[7], [7], [7], [7]]]
 ];
 var colors = ['c1e184', '4f6c19', '699021', '8fc32e', '1a2308'];
+var assets = {
+    rotate: document.getElementById('rotate-sound'),
+    drop: document.getElementById('drop-sound'),
+    move: document.getElementById('move-sound'),
+    point: document.getElementById('point-sound')
+};
+var audio_chanels = [];
+
 var current_shape_type = 0;
 var next_shape_type = Math.ceil(Math.random()*shapes.length-1);
 var current_shape = shapes[current_shape_type];
@@ -68,6 +78,12 @@ function draw_shape(x, y, scale, type, angle) {
         for (var yi=0; yi<shape(type, angle).length; yi++)
             if (shape(type, angle)[yi][xi] !== 0)
                 draw_brick(x+xi, y+yi, scale, type+1);
+}
+
+function draw_text(text, size, x, y) {
+    context.fillStyle = '#fff';
+    context.font = size+'px Verdana';
+    context.fillText(text, x, y);
 }
 
 function draw_brick(x, y, scale, number) {
@@ -120,6 +136,14 @@ function draw() {
     
     // Next shape
     draw_shape(21, 1, 1, next_shape_type, 0);
+
+    // Score
+    draw_text(points, 30, 420, 130);
+    draw_text('Points', 13, 420, 150);
+    
+    // Level
+    draw_text(level, 30, 420, 230);
+    draw_text('Level', 13, 420, 250);
 }
 
 function noice(offset, level) {
@@ -134,11 +158,14 @@ function freeze() {
 }
 
 function clear_full_lines() {
+    var number_of_lines = 0;
+
     for (var y=1; y<16; y++) {
         var clear_line = true;
         for (x=0; x<10; x++)
             if (field[x][y] === 0) clear_line = false;
         if (clear_line) {
+	    number_of_lines++;
             for (var yy=y; yy>0; yy--)
                 for (var xx=0; xx<10; xx++)
                     field[xx][yy] = field[xx][yy-1];
@@ -146,9 +173,35 @@ function clear_full_lines() {
                 field[xx][0] = 0;
         }
     }
+    
+    if (number_of_lines == 1) points += 10;
+    if (number_of_lines == 2) points += 25;
+    if (number_of_lines == 3) points += 50;
+    if (number_of_lines == 4) points += 100;
+    
+    if (number_of_lines > 0) play_sound('point');
+}
+
+function play_sound(name) {
+    // Search for a free audio channel to play the sound
+    for (var a=0; a<audio_chanels.length; a++) {
+	now = new Date();
+	if (audio_chanels[a].finished < now.getTime()) {
+	    audio_chanels[a].finished = now.getTime() + assets[name].duration * 1000;
+	    audio_chanels[a].channel.src = assets[name].src;
+	    audio_chanels[a].channel.play();
+	    audio_chanels[a].channel.volume = 0.1;
+	}
+    }
 }
 
 function next_shape() {
+    stones++;
+    if (stones > 20) {
+	level++;
+	stones = 0;
+    }
+
     pos.left = 4;
     pos.top = 0;
     current_shape_type = next_shape_type;
@@ -172,6 +225,7 @@ addEventListener('keydown', function(event) {
 	    pos.left > 0 &&
 	    !will_collide(angle, {left: pos.left-1, top: pos.top})) {
 	    pos.left--;
+	    play_sound('move');
 	    draw();
 	}
 
@@ -180,6 +234,7 @@ addEventListener('keydown', function(event) {
 	    pos.left < 10-shape(current_shape_type, angle)[0].length &&
 	    !will_collide(angle, {left: pos.left+1, top: pos.top})) {
 	    pos.left++;
+	    play_sound('move');
 	    draw();
 	}
 
@@ -189,6 +244,7 @@ addEventListener('keydown', function(event) {
 	    if (pos.left+shape(current_shape_type, new_angle)[0].length <= 10 &&
 		!will_collide(new_angle, pos))
 		angle = new_angle;
+	    play_sound('rotate');
 	    draw();
 	}
 
@@ -197,9 +253,11 @@ addEventListener('keydown', function(event) {
 	    while(!will_collide(angle, {left: pos.left, top: pos.top+1}))
 		pos.top++;
 	    pos.top++;
+	    points += 2;
 	    freeze();
 	    clear_full_lines();
 	    next_shape();
+	    play_sound('drop');
 	    draw();
 	}
     }
@@ -217,6 +275,25 @@ addEventListener('keydown', function(event) {
 
 function init() {
     speed = 100;
+    points = 0;
+    level = 0;
+    stones = 0;
+
+    // Load the assets
+    assets.rotate.load();
+    assets.drop.load();
+    assets.move.load();
+    assets.point.load();
+    
+    // Init the audio chanels
+    for (var a=0; a<10; a++) {
+	audio_chanels[a] = {
+	    channel: new Audio(),
+	    finished: -1
+	};
+    }
+
+    // Initialize the game field and the background
     for (var x=0; x<10; x++) {
         field[x] = [];
         background[x] = [];
@@ -226,6 +303,8 @@ function init() {
             field[x][y] = 0;
         }
     }
+
+    // Start the game
     next_shape();
 }
 
@@ -237,7 +316,7 @@ function loop() {
     subframe++;
     if (subframe-speed > 0.0) {
         subframe = 0;
-        if (speed > 20.0) speed -= 0.5;
+	speed = 100-(level*15);
         
         // Check if we get blocked by the already dropped shapes
         +function() {
@@ -252,6 +331,7 @@ function loop() {
                 moved_steps = 0;
                 return true;	
             }
+	    return false;
         }() || (pos.top++ && moved_steps++);
 	draw();
     } 
