@@ -77,7 +77,7 @@ function draw_shape(x, y, scale, type, angle) {
     for (var xi=0; xi<shape(type, angle)[0].length; xi++)
         for (var yi=0; yi<shape(type, angle).length; yi++)
             if (shape(type, angle)[yi][xi] !== 0)
-                draw_brick(x+xi, y+yi, scale, type+1);
+                draw_brick(x+xi, y+yi, scale, type);
 }
 
 function draw_text(text, size, x, y) {
@@ -86,8 +86,7 @@ function draw_text(text, size, x, y) {
     context.fillText(text, x, y);
 }
 
-function draw_brick(x, y, scale, number) {
-    var i = number-1;
+function draw_brick(x, y, scale, i) {
     var color_offset = i > 1 ? 2 : 0;
     rect(x*20+1, y*20+1, 18, 18, scale, colors[color_offset+1]);
     rect(x*20+2, y*20+2, 16, 16, scale, colors[color_offset]);
@@ -128,7 +127,7 @@ function draw() {
     for (var x=0; x<10; x++)
         for (var y=0; y<16; y++) {
             rect(x*20, y*20, 20, 20, 2, background[x][y]);
-            if (field[x][y] !== 0) draw_brick(x, y, 2, field[x][y]);
+            if (field[x][y] !== 0) draw_brick(x, y, 2, field[x][y]-1);
         }
 
     // Current shape
